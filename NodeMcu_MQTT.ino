@@ -58,15 +58,27 @@ unsigned long lastMsg = 0;
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 
+int DELAY = 3000;
+
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
+  char ledStat[100];
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
+    ledStat[i] = (char)payload[i];
   }
   Serial.println();
 
+  if(!strcmp(topic, "MQTT-LED")) {
+    DELAY = 500;
+    if(!strcmp(ledStat, "on")) {
+      turnOnLight();
+    } else {
+      turnOffLight();
+    }
+  }
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
     digitalWrite(LED_BUILTIN, LOW);   // Turn the LED on (Note that LOW is the voltage level
@@ -341,7 +353,8 @@ void loop() {
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 3000) {
+  if (now - lastMsg > DELAY) {
+    DELAY = 5000;
     lastMsg = now;
     ++value;
 
