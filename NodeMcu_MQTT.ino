@@ -16,6 +16,10 @@
 // for DHT11
 #include "DHT.h"
 
+
+// DHT Sensor
+uint8_t LEDPin = 16;
+
 // Uncomment one of the lines below for whatever DHT sensor type you're using!
 #define DHTTYPE DHT11   // DHT 11
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
@@ -44,8 +48,8 @@ const char* mqtt_server = "";
 const int   mqtt_port = 1884;
 const char* mqtt_usr = "";
 const char* mqtt_pwd = "";
-const char* mqtt_out_topic = "MQTT-NodeMcu";
-const char* mqtt_in_topic = "MQTT-Server";
+const char* mqtt_out_topic = "MQTT-DHT11";
+const char* mqtt_in_topic = "MQTT-LED";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -272,10 +276,36 @@ void printDports(){
   Serial.printf("--- D8 --- %d\n", D8); 
 }
 
+String getLightStatus() {
+  String ret = "";
+  int val = digitalRead(LEDPin); 
+  if (val == LOW) {
+    ret = "on";
+  } else {
+    ret = "off";
+  }
+  return ret;
+}
+
+void turnOffLight() {
+  //int val = digitalRead(LEDPin); 
+  //if (val == LOW) {
+    digitalWrite(LEDPin, HIGH);  
+  //} else {
+  //  digitalWrite(LEDPin, LOW);
+  //}
+}
+
+void turnOnLight() {
+  digitalWrite(LEDPin, LOW);
+}
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LEDPin, OUTPUT);
   Serial.begin(115200);
-    
+
+  turnOffLight();
   pinMode(DHTPin, INPUT);
   dht.begin();
   delay(1000);
@@ -318,8 +348,8 @@ void loop() {
     float t = dht.readTemperature(); // Gets the values of the temperature
     float h = dht.readHumidity(); // Gets the values of the humidity
     showOnScreen(t, h);
-    
-    snprintf (msg, MSG_BUFFER_SIZE, "DHT11(%ld)#%3.1f#%2.0f", value, t, h);
+    String light = getLightStatus();
+    snprintf (msg, MSG_BUFFER_SIZE, "DHT11(%ld)#%3.1f#%2.0f#%s", value, t, h, light.c_str());
     Serial.print("Publish message: ");
     Serial.println(msg);
     client.publish(mqtt_out_topic, msg);
